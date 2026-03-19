@@ -1,5 +1,5 @@
 export const navLinks = [
-    { label: "News", href: "/nyheder" },
+    { label: "Journal", href: "/blog" },
     { label: "Brands", href: "/brands" },
     { label: "Women", href: "/products/filter?gender=Female" },
     { label: "Men", href: "/products/filter?gender=Male" },
