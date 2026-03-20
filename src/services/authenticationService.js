@@ -1,4 +1,5 @@
 const orderRepo = require('../data/orderRepo');
+const productRepo = require('../data/productRepo');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const mailer = require('../utils/mailer');
 const shippingService = require('../services/shippingService');
@@ -88,6 +89,9 @@ async function handleAuthenticationFailed(orderId, notes = "") {
         authenticationStatus: "failed",
         authenticationNotes: notes
     });
+
+    const productId = order.product._id || order.product;
+    await productRepo.updateStatusProduct(productId, "Rejected");
 
     // 2. Cancel PaymentIntent (uncaptured funds)
     if (order.stripePaymentIntentId) {
