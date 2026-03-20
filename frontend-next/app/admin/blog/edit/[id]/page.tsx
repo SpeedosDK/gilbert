@@ -4,6 +4,7 @@ import { useState, useEffect, use } from "react";
 import { api } from "@/app/api/api";
 import ProductPicker from "@/app/components/admin/ProductPicker";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, Save, Upload, Loader2, Pin } from "lucide-react";
 
 interface Props {
     params: Promise<{ id: string }>;
@@ -11,15 +12,10 @@ interface Props {
 
 export default function EditBlogPost({ params }: Props) {
     const router = useRouter();
-
-    // Unwrap params using React.use()
     const resolvedParams = use(params);
     const postId = resolvedParams.id;
-
-    // Base URL til din backend (da admin kører på 3001 og billeder ligger på 3000)
     const baseUrl = "http://localhost:3000";
 
-    // States
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
     const [image, setImage] = useState<File | null>(null);
@@ -27,37 +23,23 @@ export default function EditBlogPost({ params }: Props) {
     const [isActive, setIsActive] = useState(false);
     const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
 
-    // 1. Fetch existing data on load
     useEffect(() => {
         async function fetchPost() {
             try {
-                // RETTELSE: Vi bruger nu den specifikke admin-rute til at hente på ID
                 const res = await api(`/api/blogs/admin/id/${postId}`);
                 const result = await res.json();
-
                 if (result.success && result.data) {
                     const post = result.data;
                     setTitle(post.title || "");
                     setContent(post.content || "");
                     setIsActive(post.isActive || false);
-
-                    // LOGIK TIL BILLEDE-PREVIEW
                     if (post.image) {
-                        if (post.image.startsWith('http')) {
-                            setPreviewUrl(post.image);
-                        } else {
-                            // Vi sikrer os at stien starter med / før vi tilføjer baseUrl
-                            const cleanPath = post.image.startsWith('/') ? post.image : `/${post.image}`;
-                            setPreviewUrl(`${baseUrl}${cleanPath}`);
-                        }
+                        const cleanPath = post.image.startsWith('/') ? post.image : `/${post.image}`;
+                        setPreviewUrl(post.image.startsWith('http') ? post.image : `${baseUrl}${cleanPath}`);
                     }
-
-                    // Map populated objects to IDs for the picker
-                    const ids = post.relatedProducts?.map((p: any) => p._id || p.id) || [];
-                    setSelectedProductIds(ids);
-                } else {
-                    console.error("Kunne ikke finde indlægget:", result.message);
+                    setSelectedProductIds(post.relatedProducts?.map((p: any) => p._id || p.id) || []);
                 }
             } catch (err) {
                 console.error("Error fetching blog post:", err);
@@ -68,28 +50,19 @@ export default function EditBlogPost({ params }: Props) {
         if (postId) fetchPost();
     }, [postId, baseUrl]);
 
-    // 2. Handle Submit
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
-
+        setSaving(true);
         const formData = new FormData();
         formData.append("title", title);
         formData.append("content", content);
         formData.append("isActive", String(isActive));
         formData.append("relatedProducts", JSON.stringify(selectedProductIds));
-
-        if (image) {
-            formData.append("image", image);
-        }
+        if (image) formData.append("image", image);
 
         try {
-            const res = await api(`/api/blogs/${postId}`, {
-                method: "PUT",
-                body: formData,
-            });
-
+            const res = await api(`/api/blogs/${postId}`, { method: "PUT", body: formData });
             if (res.ok) {
-                alert("Blog post updated successfully!");
                 router.push("/admin/blog");
                 router.refresh();
             } else {
@@ -98,118 +71,184 @@ export default function EditBlogPost({ params }: Props) {
             }
         } catch (err) {
             console.error("Submit error:", err);
+        } finally {
+            setSaving(false);
         }
     }
 
-    if (loading) return <p className="text-black p-6 font-medium italic text-center">Loading post data...</p>;
+    if (loading) return (
+        <div className="flex items-center justify-center min-h-screen bg-[hsl(var(--background))]">
+            <div className="flex flex-col items-center gap-4">
+                <Loader2 className="h-6 w-6 animate-spin text-[hsl(var(--foreground)/0.4)]" />
+                <p className="font-mono text-[9px] uppercase tracking-[0.4em] text-[hsl(var(--foreground)/0.3)]">Loading post…</p>
+            </div>
+        </div>
+    );
 
     return (
-        <div className="max-w-4xl mx-auto p-6 bg-white rounded-xl shadow-sm border border-gray-100 mt-10 mb-20">
-            <h1 className="text-3xl font-bold mb-8 text-black tracking-tight">Edit Blog Post</h1>
+        <div className="min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
+            <div className="max-w-4xl mx-auto px-5 md:px-10 pt-20 md:pt-28 pb-24">
 
-            <form onSubmit={handleSubmit} className="space-y-8">
-                {/* Title */}
-                <div>
-                    <label className="block font-bold text-black mb-2 uppercase text-[10px] tracking-[0.2em]">Headline</label>
-                    <input
-                        type="text"
-                        className="w-full p-4 border border-gray-200 rounded-xl text-black focus:ring-2 focus:ring-black outline-none transition-all"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        placeholder="Enter post title..."
-                        required
-                    />
-                </div>
+                {/* ── HEADER ── */}
+                <header className="pb-8 mb-10 border-b border-[hsl(var(--foreground)/0.08)]">
+                    <button
+                        onClick={() => router.back()}
+                        className="inline-flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.3em] text-[hsl(var(--foreground)/0.4)] hover:text-[hsl(var(--ivory))] transition-colors mb-6"
+                    >
+                        <ArrowLeft className="h-3 w-3" />
+                        Back
+                    </button>
+                    <p className="font-mono text-[9px] uppercase tracking-[0.5em] text-[hsl(var(--foreground)/0.35)] mb-3">Admin — Journal</p>
+                    <h1 className="text-5xl md:text-6xl font-black italic uppercase tracking-tighter leading-[0.85] text-[hsl(var(--ivory))]">
+                        Edit Post
+                    </h1>
+                </header>
 
-                {/* Image Preview & Upload */}
-                <div>
-                    <label className="block font-bold text-black mb-2 uppercase text-[10px] tracking-[0.2em]">Cover Image</label>
-                    <div className="flex items-center gap-6 p-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-                        {previewUrl ? (
-                            <img src={previewUrl} alt="Preview" className="w-32 h-32 object-cover rounded-xl shadow-md border-2 border-white" />
-                        ) : (
-                            <div className="w-32 h-32 bg-gray-200 rounded-xl flex items-center justify-center text-gray-400 text-xs text-center p-2">No image</div>
-                        )}
-                        <div className="flex-1">
-                            <input
-                                type="file"
-                                accept="image/*"
-                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-6 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-black file:text-white hover:file:bg-gray-800 cursor-pointer transition-all"
-                                onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                        setImage(file);
-                                        setPreviewUrl(URL.createObjectURL(file));
-                                    }
-                                }}
-                            />
-                            <p className="text-[10px] text-gray-400 mt-3 font-medium uppercase tracking-wider">Recommended: 1200x800px. Max 5MB.</p>
+                <form onSubmit={handleSubmit} className="space-y-10">
+
+                    {/* ── TITLE ── */}
+                    <div className="space-y-2">
+                        <label className="font-mono text-[9px] uppercase tracking-[0.4em] text-[hsl(var(--foreground)/0.4)]">
+                            Headline
+                        </label>
+                        <input
+                            type="text"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            placeholder="Post title…"
+                            required
+                            className="w-full bg-transparent border-b border-[hsl(var(--foreground)/0.15)] focus:border-[hsl(var(--ivory))] outline-none py-3 text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-[hsl(var(--ivory))] placeholder:text-[hsl(var(--foreground)/0.2)] transition-colors"
+                        />
+                    </div>
+
+                    {/* ── COVER IMAGE ── */}
+                    <div className="space-y-3">
+                        <label className="font-mono text-[9px] uppercase tracking-[0.4em] text-[hsl(var(--foreground)/0.4)]">
+                            Cover Image
+                        </label>
+                        <div className="flex flex-col sm:flex-row gap-5 p-5 border border-[hsl(var(--foreground)/0.1)] hover:border-[hsl(var(--foreground)/0.25)] transition-colors">
+                            {/* Preview */}
+                            <div className="flex-shrink-0 w-full sm:w-40 h-40 bg-[hsl(var(--card))] border border-[hsl(var(--foreground)/0.08)] overflow-hidden">
+                                {previewUrl ? (
+                                    <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                        <span className="font-mono text-[9px] uppercase tracking-widest text-[hsl(var(--foreground)/0.2)]">No image</span>
+                                    </div>
+                                )}
+                            </div>
+                            {/* Upload */}
+                            <div className="flex flex-col justify-center gap-3">
+                                <label className="inline-flex items-center gap-2 px-4 py-2.5 border border-[hsl(var(--foreground)/0.2)] text-[hsl(var(--foreground)/0.6)] hover:text-[hsl(var(--ivory))] hover:border-[hsl(var(--foreground)/0.5)] font-mono text-[10px] uppercase tracking-[0.25em] cursor-pointer transition-all">
+                                    <Upload className="h-3.5 w-3.5" />
+                                    Choose file
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                setImage(file);
+                                                setPreviewUrl(URL.createObjectURL(file));
+                                            }
+                                        }}
+                                    />
+                                </label>
+                                <p className="font-mono text-[9px] text-[hsl(var(--foreground)/0.25)] uppercase tracking-wider">
+                                    Recommended: 1200×800px · Max 5 MB
+                                </p>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Content */}
-                <div>
-                    <label className="block font-bold text-black mb-2 uppercase text-[10px] tracking-[0.2em]">Content (HTML allowed)</label>
-                    <textarea
-                        className="w-full p-4 border border-gray-200 rounded-xl h-80 text-black focus:ring-2 focus:ring-black outline-none font-mono text-sm leading-relaxed"
-                        value={content}
-                        onChange={(e) => setContent(e.target.value)}
-                        placeholder="Write your story here..."
-                        required
-                    />
-                </div>
-
-                <hr className="border-gray-100" />
-
-                {/* SETTINGS SECTION */}
-                <div className="bg-gray-50 p-8 rounded-3xl border border-gray-100 space-y-8">
-                    <h2 className="text-xl font-bold text-black flex items-center gap-2">
-                        <span className="w-2 h-2 bg-black rounded-full"></span>
-                        Display Settings & Relations
-                    </h2>
-
-                    {/* Active Toggle */}
-                    <div className="flex items-center gap-4 p-5 bg-white border border-gray-200 rounded-2xl shadow-sm transition-all hover:border-black/20">
-                        <input
-                            type="checkbox"
-                            id="isActive"
-                            className="w-6 h-6 accent-black cursor-pointer"
-                            checked={isActive}
-                            onChange={(e) => setIsActive(e.target.checked)}
-                        />
-                        <label htmlFor="isActive" className="font-bold text-black cursor-pointer flex-1 select-none">
-                            Feature this post on the homepage
-                            <span className="block font-normal text-gray-500 text-xs mt-0.5">Activating this will replace the current featured post.</span>
+                    {/* ── CONTENT ── */}
+                    <div className="space-y-3">
+                        <label className="font-mono text-[9px] uppercase tracking-[0.4em] text-[hsl(var(--foreground)/0.4)]">
+                            Content <span className="normal-case tracking-normal opacity-50">(HTML allowed)</span>
                         </label>
-                    </div>
-
-                    {/* Product Picker */}
-                    <div className="bg-white p-2 rounded-2xl border border-gray-200 overflow-hidden">
-                        <ProductPicker
-                            selectedIds={selectedProductIds}
-                            onSelectionChange={setSelectedProductIds}
+                        <textarea
+                            value={content}
+                            onChange={(e) => setContent(e.target.value)}
+                            placeholder="Write your story here…"
+                            required
+                            rows={16}
+                            className="w-full bg-[hsl(var(--card))] border border-[hsl(var(--foreground)/0.1)] focus:border-[hsl(var(--foreground)/0.35)] outline-none p-5 text-[hsl(var(--foreground)/0.8)] font-mono text-sm leading-relaxed placeholder:text-[hsl(var(--foreground)/0.2)] transition-colors resize-y"
                         />
                     </div>
-                </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-4 pt-6">
-                    <button
-                        type="submit"
-                        className="flex-[2] bg-black text-white px-8 py-5 rounded-2xl font-bold hover:bg-gray-800 transition-all shadow-xl active:scale-[0.98] uppercase text-xs tracking-widest"
+                    {/* ── DIVIDER ── */}
+                    <div className="flex items-center gap-4">
+                        <div className="h-[1px] flex-1 bg-[hsl(var(--foreground)/0.08)]" />
+                        <span className="font-mono text-[9px] uppercase tracking-[0.4em] text-[hsl(var(--foreground)/0.25)]">Settings</span>
+                        <div className="h-[1px] flex-1 bg-[hsl(var(--foreground)/0.08)]" />
+                    </div>
+
+                    {/* ── FEATURED TOGGLE ── */}
+                    <div
+                        onClick={() => setIsActive(!isActive)}
+                        className={`flex items-start gap-5 p-5 border cursor-pointer transition-all ${
+                            isActive
+                                ? "border-[hsl(var(--ivory)/0.4)] bg-[hsl(var(--ivory)/0.04)]"
+                                : "border-[hsl(var(--foreground)/0.1)] hover:border-[hsl(var(--foreground)/0.25)]"
+                        }`}
                     >
-                        Save Changes
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => router.back()}
-                        className="flex-1 bg-white text-black border border-gray-200 px-8 py-5 rounded-2xl font-bold hover:bg-gray-50 transition-all uppercase text-xs tracking-widest"
-                    >
-                        Cancel
-                    </button>
-                </div>
-            </form>
+                        {/* Custom checkbox */}
+                        <div className={`flex-shrink-0 w-5 h-5 border mt-0.5 flex items-center justify-center transition-all ${
+                            isActive ? "bg-[hsl(var(--ivory))] border-[hsl(var(--ivory))]" : "border-[hsl(var(--foreground)/0.3)]"
+                        }`}>
+                            {isActive && (
+                                <svg className="w-3 h-3 text-[hsl(var(--background))]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                            )}
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <Pin className="h-3 w-3 text-[hsl(var(--ivory)/0.6)]" />
+                                <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-[hsl(var(--ivory))]">
+                                    Feature on homepage
+                                </span>
+                            </div>
+                            <p className="font-mono text-[9px] text-[hsl(var(--foreground)/0.4)] leading-relaxed">
+                                Activating this will replace the current featured post.
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* ── PRODUCT PICKER ── */}
+                    <div className="space-y-3">
+                        <label className="font-mono text-[9px] uppercase tracking-[0.4em] text-[hsl(var(--foreground)/0.4)]">
+                            Related Products
+                        </label>
+                        <div className="border border-[hsl(var(--foreground)/0.1)] overflow-hidden">
+                            <ProductPicker
+                                selectedIds={selectedProductIds}
+                                onSelectionChange={setSelectedProductIds}
+                            />
+                        </div>
+                    </div>
+
+                    {/* ── ACTIONS ── */}
+                    <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-[hsl(var(--foreground)/0.08)]">
+                        <button
+                            type="submit"
+                            disabled={saving}
+                            className="flex-[2] inline-flex items-center justify-center gap-2 px-8 py-4 bg-[hsl(var(--ivory))] text-[hsl(var(--background))] font-mono text-[10px] uppercase tracking-[0.3em] hover:bg-[hsl(var(--ivory-dark))] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        >
+                            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                            {saving ? "Saving…" : "Save Changes"}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => router.back()}
+                            className="flex-1 px-8 py-4 border border-[hsl(var(--foreground)/0.15)] text-[hsl(var(--foreground)/0.5)] font-mono text-[10px] uppercase tracking-[0.3em] hover:text-[hsl(var(--ivory))] hover:border-[hsl(var(--foreground)/0.4)] transition-all"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     );
 }
