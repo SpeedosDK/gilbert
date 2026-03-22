@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { navLinks } from "./navLinks";
+import { navLinks, secondaryNavLinks } from "./navLinks";
 import { api } from "@/app/api/api";
 
 type SubcategoryItem = {
@@ -25,7 +25,6 @@ const GENDER_MAP: Record<string, string> = {
 
 const BRANDS_PREVIEW = 15;
 
-// Kategorier der skal være selvstændige menuer
 const SOLO_CATEGORIES = ["Home", "Beauty"];
 
 export default function MegaNav() {
@@ -137,11 +136,11 @@ export default function MegaNav() {
 
     return (
         <nav ref={navRef} className="bg-background border-b border-border/50 w-full relative">
+            {/* ── Primary nav row ── */}
             <div className="flex flex-wrap items-center justify-center gap-x-1 md:gap-x-4 px-2 py-2 mx-auto max-w-7xl">
                 {navLinks.map((link) => {
                     const isGender = link.label in GENDER_MAP;
                     const isBrands = link.label === "Brands";
-                    // Tilføj Home/Beauty som solo
                     const isSolo = SOLO_CATEGORIES.includes(link.label);
                     const hasDropdown = isGender || isBrands || isSolo;
 
@@ -168,10 +167,7 @@ export default function MegaNav() {
                                     {link.label}
                                 </button>
                             ) : (
-                                <Link
-                                    href={link.href}
-                                    className={sharedClassName}
-                                >
+                                <Link href={link.href} className={sharedClassName}>
                                     {link.label}
                                 </Link>
                             )}
@@ -180,21 +176,34 @@ export default function MegaNav() {
                 })}
             </div>
 
+            {/* ── Secondary nav row (Spa etc.) ── */}
+            <div className="flex items-center justify-center border-t border-border/20 px-2 py-1.5 mx-auto max-w-7xl">
+                {secondaryNavLinks.map((link) => (
+                    <Link
+                        key={link.label}
+                        href={link.href}
+                        className="text-[10px] sm:text-[11px] whitespace-nowrap px-3 py-0.5 uppercase tracking-[0.15em] font-medium text-foreground/50 hover:text-foreground transition-colors italic"
+                    >
+                        {link.label}
+                    </Link>
+                ))}
+            </div>
+
             {/* ── Gender megamenu ── */}
             {hovered && hovered in GENDER_MAP && (
                 <div
                     className="absolute top-full left-0 right-0 z-[999] flex justify-center px-2 md:px-4"
-                    onMouseEnter={() => handleEnter(hovered)}
+                    onMouseEnter={() => handleEnter(hovered!)}
                     onMouseLeave={handleLeave}
                 >
                     <div className="bg-popover border border-border/50 rounded-lg shadow-xl p-4 md:p-6 max-w-[95vw] w-auto mt-1">
-                        {!genderTrees[hovered] ? (
+                        {!genderTrees[hovered!] ? (
                             <p className="text-sm text-muted-foreground">Loading categories…</p>
-                        ) : treeError || Object.keys(genderTrees[hovered]).length === 0 ? (
+                        ) : treeError || Object.keys(genderTrees[hovered!]).length === 0 ? (
                             <p className="text-sm text-muted-foreground">No categories found.</p>
                         ) : (
                             <div className="flex flex-wrap gap-6 md:gap-8">
-                                {Object.entries(genderTrees[hovered]).map(([category, subs]) => (
+                                {Object.entries(genderTrees[hovered!]).map(([category, subs]) => (
                                     <div key={`cat-${category}`} className="min-w-[8rem]">
                                         <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 font-sans">
                                             {category}
@@ -203,10 +212,10 @@ export default function MegaNav() {
                                             {Array.isArray(subs) && subs.length === 0 ? (
                                                 <li className="text-xs text-muted-foreground/60 italic">No subcategories</li>
                                             ) : (
-                                                subs.map((sub) => (
+                                                (subs as SubcategoryItem[]).map((sub) => (
                                                     <li key={sub.id}>
                                                         <Link
-                                                            href={`/products/filter?gender=${GENDER_MAP[hovered]}&subcategory=${sub.id}`}
+                                                            href={`/products/filter?gender=${GENDER_MAP[hovered!]}&subcategory=${sub.id}`}
                                                             className="text-sm text-foreground/70 hover:text-foreground flex items-center gap-1 group/item transition-colors"
                                                         >
                                                             <span>{sub.name}</span>
@@ -224,7 +233,7 @@ export default function MegaNav() {
                         )}
                         <div className="mt-5 pt-4 border-t border-border/30">
                             <Link
-                                href={`/products/filter?gender=${GENDER_MAP[hovered]}`}
+                                href={`/products/filter?gender=${GENDER_MAP[hovered!]}`}
                                 className="text-xs font-medium text-foreground/60 hover:text-foreground transition-colors uppercase tracking-wider"
                             >
                                 See everything in {hovered} →
@@ -245,7 +254,6 @@ export default function MegaNav() {
                         <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">
                             Popular brands
                         </h4>
-
                         {brands.length === 0 ? (
                             <p className="text-sm text-muted-foreground">Loading brands…</p>
                         ) : (
@@ -261,7 +269,6 @@ export default function MegaNav() {
                                 ))}
                             </div>
                         )}
-
                         <div className="mt-5 pt-4 border-t border-border/30">
                             <Link
                                 href="/brands"
@@ -278,17 +285,17 @@ export default function MegaNav() {
             {hovered && SOLO_CATEGORIES.includes(hovered) && (
                 <div
                     className="absolute top-full left-0 right-0 z-[999] flex justify-center px-2 md:px-4"
-                    onMouseEnter={() => handleEnter(hovered)}
+                    onMouseEnter={() => handleEnter(hovered!)}
                     onMouseLeave={handleLeave}
                 >
                     <div className="bg-popover border border-border/50 rounded-lg shadow-xl p-4 md:p-6 max-w-[95vw] w-auto mt-1">
-                        {!soloTrees[hovered] ? (
+                        {!soloTrees[hovered!] ? (
                             <p className="text-sm text-muted-foreground">Loading…</p>
-                        ) : treeError || Object.keys(soloTrees[hovered]).length === 0 ? (
+                        ) : treeError || Object.keys(soloTrees[hovered!]).length === 0 ? (
                             <p className="text-sm text-muted-foreground">No categories found.</p>
                         ) : (
                             <div className="flex flex-wrap gap-6 md:gap-8">
-                                {Object.entries(soloTrees[hovered]).map(([category, subs]) => (
+                                {Object.entries(soloTrees[hovered!]).map(([category, subs]) => (
                                     <div key={`cat-${category}`} className="min-w-[8rem]">
                                         <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 font-sans">
                                             {category}
@@ -297,7 +304,7 @@ export default function MegaNav() {
                                             {Array.isArray(subs) && subs.length === 0 ? (
                                                 <li className="text-xs text-muted-foreground/60 italic">No subcategories</li>
                                             ) : (
-                                                subs.map((sub) => (
+                                                (subs as SubcategoryItem[]).map((sub) => (
                                                     <li key={sub.id}>
                                                         <Link
                                                             href={`/products/filter?category=${category}&subcategory=${sub.id}`}

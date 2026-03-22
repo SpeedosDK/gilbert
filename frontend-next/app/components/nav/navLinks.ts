@@ -6,3 +6,8 @@ export const navLinks = [
     { label: "Beauty", href: "/products/filter?category=jewelry" },
     { label: "Home", href: "/products/filter?category=home" },
 ];
+
+export const secondaryNavLinks = [
+    { label: "Spa", href: "/spa" },
+];
+
