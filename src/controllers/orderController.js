@@ -5,7 +5,7 @@ const { sanitizeUser } = require("../utils/sanitizeUser");
 // 1. Opret en ny ordre (Køb nu / Accepter bud)
 async function initiateOrder(req, res, next) {
     try {
-        const { productId, bidId, wantAuth, address, discountCode, shippingMethod } = req.body;
+        const { productId, bidId, wantsAuthentication, address, discountCode, shippingMethod } = req.body;
         const buyerId = req.user._id;
 
         const result = await orderService.initiateOrder(
