@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Search, X, ShoppingBag } from "lucide-react";
+import { Bell, Search, X } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/app/components/UI/button";
@@ -147,31 +147,31 @@ const TopBar = () => {
                     </h1>
                 </Link>
 
-                <div className="absolute right-4 flex items-center gap-4">
+                <div className="absolute right-4 flex items-center gap-3">
                     {user?.role === "admin" && (
                         <Link href="/admin" className="hidden md:block text-accent font-bold hover:brightness-125">
                             Admin
                         </Link>
                     )}
 
-                    <div className="hidden md:flex items-center gap-4">
-                        <Link href="/products/create" className="px-4 py-1 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-80 transition">
-                            Sell an item
-                        </Link>
+                    <Link href="/products/create" className="hidden md:block px-4 py-1 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-80 transition">
+                        Sell an item
+                    </Link>
 
-                        {user ? (
-                            <>
+                    {!loading && (
+                        user ? (
+                            <div className="hidden md:flex items-center gap-3">
                                 <Link href="/profile/me" className="text-sm font-medium hover:text-primary transition text-foreground">
                                     {user.username}
                                 </Link>
                                 <button onClick={logout} className="text-sm text-muted-foreground hover:text-red-400 transition">
                                     Logout
                                 </button>
-                            </>
+                            </div>
                         ) : (
-                            !loading && <Link href="/login" className="text-sm font-medium text-foreground">Login</Link>
-                        )}
-                    </div>
+                            <Link href="/login" className="hidden md:block text-sm font-medium text-foreground">Login</Link>
+                        )
+                    )}
 
                     <div className="relative" ref={dropdownRef}>
                         <Button
@@ -241,10 +241,6 @@ const TopBar = () => {
                             </div>
                         )}
                     </div>
-
-                    <Button variant="ghost" size="icon" className="text-foreground hover:bg-muted">
-                        <ShoppingBag className="h-5 w-5" />
-                    </Button>
                 </div>
             </div>
 
