@@ -73,8 +73,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-// Svar på preflight OPTIONS requests for alle ruter
-app.options('/(.*)', cors(corsOptions));
 
 // Webhook routes – stadig før alt andet
 // I din app.js, find sektionen for webhooks og ret den til dette:
