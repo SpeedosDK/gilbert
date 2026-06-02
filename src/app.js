@@ -50,23 +50,12 @@ connectToMongo();
 
 
 // CORS – tillad frontend
-const allowedOrigins = (process.env.FRONTEND_URL || 'https://gilbert-frontend-production.up.railway.app')
-    .split(',')
-    .map(o => o.trim().replace(/\/$/, ''))
-    .filter(Boolean);
-
+// origin: true reflekterer den indkommende Origin-header tilbage i
+// Access-Control-Allow-Origin. Det virker sammen med credentials: true
+// (i modsætning til '*') og undgår at requests fejler pga. en lille
+// forskel i FRONTEND_URL (http/https, www, trailing slash osv.).
 const corsOptions = {
-    origin: (origin, callback) => {
-        // Tillad requests uden origin (fx mobile apps, curl, server-to-server)
-        if (!origin) return callback(null, true);
-        const normalised = origin.replace(/\/$/, '');
-        if (allowedOrigins.includes(normalised)) {
-            callback(null, true);
-        } else {
-            console.warn(`CORS blocked origin: ${origin}`);
-            callback(new Error(`CORS: origin ${origin} not allowed`));
-        }
-    },
+    origin: true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],

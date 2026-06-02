@@ -47,7 +47,7 @@ async function login(req, res, next) {
         // Access token (kort levetid)
         res.cookie("authToken", accessToken, {
             httpOnly: true,
-            secure: true,
+            secure: isProduction(),
             sameSite: "none",
             maxAge: 60 * 60 * 1000 // 1 time
         });
@@ -55,8 +55,8 @@ async function login(req, res, next) {
         // Refresh token (lang levetid)
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
-            secure: true,
-            sameSite: "none",
+            secure: isProduction(),
+            sameSite: "strict",
             maxAge: 30 * 24 * 60 * 60 * 1000 // 30 dage
         });
 
