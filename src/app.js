@@ -50,7 +50,7 @@ connectToMongo();
 
 
 // CORS – tillad frontend
-const allowedOrigins = (process.env.FRONTEND_URL || '')
+const allowedOrigins = (process.env.FRONTEND_URL || 'https://gilbert-frontend-production.up.railway.app')
     .split(',')
     .map(o => o.trim().replace(/\/$/, ''))
     .filter(Boolean);
