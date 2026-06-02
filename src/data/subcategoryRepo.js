@@ -1,4 +1,4 @@
-const Subcategory = require('../models/subcategory');
+const Subcategory = require('../models/Subcategory');
 const Gender = require('../models/Gender');
 
 async function createSubcategory(subcategoryData) {

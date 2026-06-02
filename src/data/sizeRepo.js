@@ -1,4 +1,4 @@
-const Size = require('../models/size');
+const Size = require('../models/Size');
 
 async function createSize(sizeData) {
     const size = new Size(sizeData);

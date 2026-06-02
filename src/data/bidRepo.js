@@ -1,4 +1,4 @@
-const Bid = require('../models/bid');
+const Bid = require('../models/Bid');
 const bidStatusses = require('../utils/bidStatusses');
 
 async function createBid(data){

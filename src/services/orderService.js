@@ -193,6 +193,7 @@ async function initiateOrder(
             amount: totalAmount * 100,
             currency: 'dkk',
             capture_method: 'manual',
+            automatic_payment_methods: { enabled: true },
             application_fee_amount: platformFee * 100,
             transfer_data: {
                 destination: seller.stripeAccountId

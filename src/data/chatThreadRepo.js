@@ -1,4 +1,4 @@
-const ChatThread = require('../models/chatThread');
+const ChatThread = require('../models/ChatThread');
 
 async function findThread(productId, buyerId, sellerId, ){
     return await ChatThread.findOne({ productId, buyerId, sellerId });
