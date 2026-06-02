@@ -47,16 +47,16 @@ async function login(req, res, next) {
         // Access token (kort levetid)
         res.cookie("authToken", accessToken, {
             httpOnly: true,
-            secure: isProduction(),
-            sameSite: "lax",
+            secure: true,
+            sameSite: "none",
             maxAge: 60 * 60 * 1000 // 1 time
         });
 
         // Refresh token (lang levetid)
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
-            secure: isProduction(),
-            sameSite: "strict",
+            secure: true,
+            sameSite: "none",
             maxAge: 30 * 24 * 60 * 60 * 1000 // 30 dage
         });
 
