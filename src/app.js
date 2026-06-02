@@ -32,7 +32,8 @@ const stripeRouter = require('./routes/stripeRoutes');
 const checkoutRouter = require('./routes/checkoutRoutes');
 const discountCodeRoutes = require('./routes/discountCodeRoutes');
 const webhookRouter = require('./routes/webhookRoutes');
-const cookieParser = require('cookie-parser') ;
+const cookieParser = require('cookie-parser');
+const cors = require('cors');
 const { limitRate } = require('./middlewares/rateLimiter');
 const { log } = require('./middlewares/logger');
 //const { jwtAuth } = require('./middlewares/jwtAuth');
@@ -47,6 +48,14 @@ connectToMongo();
 // Middleware
 //app.set('trust proxy', 1); //hvis jeg ligger bag reverse proxy
 
+
+// CORS – tillad frontend på port 3001
+app.use(cors({
+    origin: process.env.FRONTEND_URL,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 
 // Webhook routes – stadig før alt andet
 // I din app.js, find sektionen for webhooks og ret den til dette:

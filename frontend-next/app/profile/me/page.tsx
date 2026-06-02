@@ -342,86 +342,87 @@ const MePage = () => {
                 {/* TAB: SOLD (Salg) */}
                 <TabsContent value="sold" className="mt-4">
                     {selectedSale ? (
-                        <div className="bg-white p-6 rounded-2xl border border-border shadow-sm animate-in fade-in zoom-in duration-200">
-                            <button onClick={() => setSelectedSale(null)} className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-black mb-6 flex items-center gap-2">
+                        /* ── SALE DETAIL VIEW ── */
+                        <div className="animate-in fade-in slide-in-from-bottom-2 duration-200">
+                            <button
+                                onClick={() => setSelectedSale(null)}
+                                className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition mb-5"
+                            >
                                 ← Back to sales
                             </button>
 
-                            <div className="flex gap-4 mb-6">
-                                <img src={selectedSale.product?.images?.[0] || "/images/ImagePlaceholder.jpg"} className="w-20 h-20 object-cover rounded-lg border" alt="Product" />
-                                <div>
-                                    <h2 className="text-lg font-bold text-black">{selectedSale.product?.title || "Unknown product"}</h2>
-                                    <p className="font-bold text-burgundy">{selectedSale.totalAmount} DKK</p>
+                            {/* Product hero */}
+                            <div className="flex gap-4 mb-6 p-4 bg-muted/20 rounded-2xl border border-border">
+                                <div className="relative h-20 w-20 rounded-xl overflow-hidden shrink-0 border border-border">
+                                    <Image
+                                        src={selectedSale.product?.images?.[0] || "/images/ImagePlaceholder.jpg"}
+                                        alt={selectedSale.product?.title || "Product"}
+                                        fill className="object-cover" sizes="80px" unoptimized
+                                    />
+                                </div>
+                                <div className="flex flex-col justify-center gap-1">
+                                    <h2 className="text-base font-bold text-foreground leading-tight">{selectedSale.product?.title || "Unknown product"}</h2>
+                                    <p className="text-sm font-bold text-green-600">+{selectedSale.sellerPayout || selectedSale.totalAmount} DKK</p>
+                                    <StatusBadge status={getSellerDisplayStatus(selectedSale)} />
                                 </div>
                             </div>
 
-                            <div className="space-y-4 border-t pt-6 text-sm">
-                                <div>
-                                    <label className="text-[9px] uppercase font-bold text-muted-foreground">Status</label>
-                                    <p className="font-medium text-black">{getSellerDisplayStatus(selectedSale)}</p>
-                                </div>
-                                <div>
-                                    <label className="text-[9px] uppercase font-bold text-muted-foreground">Buyer</label>
-                                    <p className="font-medium text-black">{selectedSale.buyer?.name || "Not provided"}</p>
-                                </div>
-                                <div>
-                                    <label className="text-[9px] uppercase font-bold text-muted-foreground">Tracking Number</label>
-                                    <p className="font-medium text-black">{selectedSale.trackingNumber || "None"}</p>
-                                </div>
+                            {/* Detail rows */}
+                            <div className="divide-y divide-border rounded-2xl border border-border overflow-hidden mb-6">
+                                <DetailRow label="Buyer" value={selectedSale.buyer?.name || selectedSale.buyer?.email || "Not provided"} />
+                                <DetailRow label="Shipping address" value={
+                                    selectedSale.shippingAddress
+                                        ? `${selectedSale.shippingAddress.street || ""} ${selectedSale.shippingAddress.houseNumber || ""}, ${selectedSale.shippingAddress.zip || ""} ${selectedSale.shippingAddress.city || ""}`.trim()
+                                        : "Not provided"
+                                } />
+                                <DetailRow label="Tracking number" value={selectedSale.trackingNumber || "Not yet generated"} />
                             </div>
 
-                            <div className="mt-8">
-                                <button
-                                    onClick={() => {
-                                        if (!selectedSale.labelUrl) {
-                                            alert("Shipping label has not been generated for this sale yet.");
-                                            return;
-                                        }
-                                        window.open(`/api/orders/${selectedSale._id}/label`, '_blank');
-                                    }}
-                                    className={`flex items-center gap-2 px-6 py-3 rounded-lg font-bold text-xs transition-all ${
-                                        selectedSale.labelUrl
-                                            ? "bg-black text-white hover:bg-gray-800"
-                                            : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                                    }`}
-                                >
-                                    <Download size={14} />
-                                    {selectedSale.labelUrl ? "Download shipping label" : "Label not ready"}
-                                </button>
-                            </div>
+                            {/* Download label */}
+                            <button
+                                onClick={() => {
+                                    if (!selectedSale.labelUrl) {
+                                        alert("Shipping label has not been generated for this sale yet.");
+                                        return;
+                                    }
+                                    window.open(`/api/orders/${selectedSale._id}/label`, '_blank');
+                                }}
+                                className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs tracking-wide transition-all ${
+                                    selectedSale.labelUrl
+                                        ? "bg-foreground text-background hover:opacity-80"
+                                        : "bg-muted text-muted-foreground cursor-not-allowed"
+                                }`}
+                            >
+                                <Download size={14} />
+                                {selectedSale.labelUrl ? "Download shipping label" : "Label not ready yet"}
+                            </button>
                         </div>
                     ) : soldItems.length === 0 ? (
-                        <div className="text-center py-12 text-muted-foreground text-sm italic">No sold items yet</div>
+                        <div className="text-center py-16 text-muted-foreground text-sm italic">No sold items yet</div>
                     ) : (
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                             {soldItems.map(item => (
                                 <div
                                     key={item._id}
                                     onClick={() => setSelectedSale(item)}
-                                    className="flex items-center justify-between p-4 bg-white border border-border rounded-2xl hover:border-black cursor-pointer transition shadow-sm"
+                                    className="flex items-center gap-3 p-3 bg-card border border-border rounded-2xl hover:border-foreground/30 hover:shadow-sm cursor-pointer transition-all group"
                                 >
-                                    <div className="flex items-center gap-4">
-                                        <div className="h-12 w-12 bg-muted rounded-lg overflow-hidden shrink-0 border relative">
-                                            <Image
-                                                src={item.product?.images?.[0] || "/images/ImagePlaceholder.jpg"}
-                                                alt={item.product?.title || "Product"}
-                                                className="object-cover"
-                                                fill
-                                                sizes="48px"
-                                                unoptimized
-                                            />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-bold text-black truncate max-w-[200px]">{item.product?.title || "Deleted Product"}</p>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <p className="text-xs text-green-600 font-bold">Payout: {item.sellerPayout || item.totalAmount} DKK</p>
-                                                <span className="text-[10px] bg-muted px-2 py-0.5 rounded font-bold uppercase text-muted-foreground truncate max-w-[120px] inline-block">
-                                                    {getSellerDisplayStatus(item)}
-                                                </span>
-                                            </div>
-                                        </div>
+                                    <div className="relative h-14 w-14 rounded-xl overflow-hidden shrink-0 border border-border">
+                                        <Image
+                                            src={item.product?.images?.[0] || "/images/ImagePlaceholder.jpg"}
+                                            alt={item.product?.title || "Product"}
+                                            className="object-cover"
+                                            fill sizes="56px" unoptimized
+                                        />
                                     </div>
-                                    <ArrowRight size={16} className="text-muted-foreground shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-semibold text-foreground truncate">{item.product?.title || "Deleted Product"}</p>
+                                        <p className="text-xs text-green-600 font-bold mt-0.5">+{item.sellerPayout || item.totalAmount} DKK</p>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                        <StatusBadge status={getSellerDisplayStatus(item)} />
+                                        <ArrowRight size={14} className="text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -431,48 +432,47 @@ const MePage = () => {
                 {/* TAB: ORDERS (Køb) */}
                 <TabsContent value="orders" className="mt-4">
                     {orders.length === 0 ? (
-                        <div className="text-center py-12 text-muted-foreground text-sm italic">No orders yet</div>
+                        <div className="text-center py-16 text-muted-foreground text-sm italic">No orders yet</div>
                     ) : (
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                             {orders.map(order => (
-                                <div key={order._id} className="bg-white border border-border rounded-2xl shadow-sm overflow-hidden hover:border-muted-foreground transition">
-                                    <Link href={`/orders/${order._id}`} className="flex items-center justify-between p-4 hover:bg-muted/30 transition block">
-                                        <div className="flex items-center gap-4">
-                                            <div className="h-12 w-12 bg-muted rounded-lg overflow-hidden shrink-0 border relative">
-                                                <Image
-                                                    src={order.product?.images?.[0] || "/images/ImagePlaceholder.jpg"}
-                                                    alt={order.product?.title || "Product"}
-                                                    className="object-cover"
-                                                    fill
-                                                    sizes="48px"
-                                                    unoptimized
-                                                />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-bold text-black truncate max-w-[150px]">{order.product?.title || "Deleted Product"}</p>
-                                                <p className="text-xs text-burgundy font-bold">{order.totalAmount} DKK</p>
-                                            </div>
+                                <div key={order._id} className="bg-card border border-border rounded-2xl overflow-hidden hover:border-foreground/30 hover:shadow-sm transition-all group">
+                                    <Link href={`/orders/${order._id}`} className="flex items-center gap-3 p-3">
+                                        <div className="relative h-14 w-14 rounded-xl overflow-hidden shrink-0 border border-border">
+                                            <Image
+                                                src={order.product?.images?.[0] || "/images/ImagePlaceholder.jpg"}
+                                                alt={order.product?.title || "Product"}
+                                                className="object-cover"
+                                                fill sizes="56px" unoptimized
+                                            />
                                         </div>
-                                        <div className="text-right">
-                                            <p className="text-[10px] uppercase font-bold text-muted-foreground">{getBuyerDisplayStatus(order)}</p>
-                                            <ArrowRight size={14} className="ml-auto mt-1 text-muted-foreground" />
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-semibold text-foreground truncate">{order.product?.title || "Deleted Product"}</p>
+                                            <p className="text-xs text-burgundy font-bold mt-0.5">{order.totalAmount} DKK</p>
+                                        </div>
+                                        <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                            <StatusBadge status={getBuyerDisplayStatus(order)} />
+                                            <ArrowRight size={14} className="text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
                                         </div>
                                     </Link>
 
-                                    {/* Tracking info for the buyer right below the order */}
+                                    {/* Tracking row */}
                                     {order.trackingNumber && order.trackingNumber !== 'ERROR' && (
-                                        <div className="px-4 py-3 bg-muted/20 border-t flex justify-between items-center">
-                                            <div>
-                                                <p className="text-[10px] uppercase font-bold text-muted-foreground">Tracking Number</p>
-                                                <p className="text-xs font-medium text-black">{order.trackingNumber}</p>
+                                        <div className="mx-3 mb-3 flex items-center justify-between px-3 py-2.5 bg-muted/40 rounded-xl border border-border">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                                                <div>
+                                                    <p className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground">Tracking</p>
+                                                    <p className="text-xs font-medium text-foreground">{order.trackingNumber}</p>
+                                                </div>
                                             </div>
                                             <a
                                                 href={getDaoTrackingLink(order.trackingNumber)}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline"
+                                                className="flex items-center gap-1 text-[10px] font-bold text-blue-600 hover:text-blue-800 transition"
                                             >
-                                                Track with DAO <ExternalLink size={12} />
+                                                Track <ExternalLink size={10} />
                                             </a>
                                         </div>
                                     )}
@@ -568,3 +568,41 @@ const MePage = () => {
 };
 
 export default MePage;
+
+/* ── Helper components ── */
+
+function StatusBadge({ status }: { status: string }) {
+    const s = status.toLowerCase();
+    const isShipped = s.includes("ship") || s.includes("on its way");
+    const isDelivered = s.includes("delivered");
+    const isFailed = s.includes("failed") || s.includes("returned");
+    const isAuth = s.includes("authentication") || s.includes("authenticat");
+    const isReady = s.includes("ready") || s.includes("processing");
+
+    const color = isDelivered
+        ? "bg-green-100 text-green-700 border-green-200"
+        : isShipped
+        ? "bg-blue-50 text-blue-600 border-blue-200"
+        : isFailed
+        ? "bg-red-50 text-red-600 border-red-200"
+        : isAuth
+        ? "bg-amber-50 text-amber-600 border-amber-200"
+        : isReady
+        ? "bg-purple-50 text-purple-600 border-purple-200"
+        : "bg-muted text-muted-foreground border-border";
+
+    return (
+        <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[9px] font-bold uppercase tracking-wider ${color}`}>
+            {status}
+        </span>
+    );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="flex items-start justify-between gap-4 px-4 py-3 bg-card">
+            <p className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground shrink-0 pt-0.5">{label}</p>
+            <p className="text-xs font-medium text-foreground text-right">{value}</p>
+        </div>
+    );
+}
