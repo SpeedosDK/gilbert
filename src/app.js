@@ -49,13 +49,32 @@ connectToMongo();
 //app.set('trust proxy', 1); //hvis jeg ligger bag reverse proxy
 
 
-// CORS – tillad frontend på port 3001
-app.use(cors({
-    origin: process.env.FRONTEND_URL,
+// CORS – tillad frontend
+const allowedOrigins = (process.env.FRONTEND_URL || '')
+    .split(',')
+    .map(o => o.trim().replace(/\/$/, ''))
+    .filter(Boolean);
+
+const corsOptions = {
+    origin: (origin, callback) => {
+        // Tillad requests uden origin (fx mobile apps, curl, server-to-server)
+        if (!origin) return callback(null, true);
+        const normalised = origin.replace(/\/$/, '');
+        if (allowedOrigins.includes(normalised)) {
+            callback(null, true);
+        } else {
+            console.warn(`CORS blocked origin: ${origin}`);
+            callback(new Error(`CORS: origin ${origin} not allowed`));
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+};
+
+app.use(cors(corsOptions));
+// Svar på preflight OPTIONS requests for alle ruter
+app.options('*', cors(corsOptions));
 
 // Webhook routes – stadig før alt andet
 // I din app.js, find sektionen for webhooks og ret den til dette:
