@@ -24,6 +24,17 @@ const startCronJobs = () => {
             console.error("❌ Cron: Fejl under bud-udløb:", error);
         }
     });
+
+    // 🟩 3) Ryd forladte, ubetalte ordrer — hvert 15. minut
+    cron.schedule("*/15 * * * *", async () => {
+        console.log("🤖 Cron: Rydder forladte ubetalte ordrer...");
+        try {
+            await orderService.cleanupAbandonedOrders(30);
+            console.log("✅ Cron: Oprydning af ubetalte ordrer gennemført.");
+        } catch (error) {
+            console.error("❌ Cron: Fejl under oprydning af ordrer:", error);
+        }
+    });
     // Slet gamle bud én gang om dagen kl. 03:00
     cron.schedule("0 3 * * *", async () => {
         console.log("🤖 Cron: Sletter gamle bud...");

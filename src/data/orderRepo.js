@@ -48,11 +48,28 @@ async function markAsDelivered(orderId) {
 }
 
 async function getOrdersByBuyer(buyerId) {
-    return await Order.find({ buyer: buyerId })
+    return await Order.find({
+        buyer: buyerId,
+        // Skjul ubetalte ordrer (annulleret/forladt checkout) — de vises først
+        // når betalingen er gennemført (status != 'pending').
+        status: { $ne: 'pending' }
+    })
         .populate('product')
         .populate('seller', 'username')
         .populate('appliedDiscountCode')
         .sort({ createdAt: -1 });
+}
+
+// Find forladte, ubetalte ordrer der er ældre end cutoff (til oprydning).
+async function findAbandonedPendingOrders(cutoff) {
+    return await Order.find({
+        status: 'pending',
+        createdAt: { $lt: cutoff }
+    });
+}
+
+async function deleteOrderById(orderId) {
+    return await Order.findByIdAndDelete(orderId);
 }
 
 async function findOrdersReadyForPayout(now) {
@@ -247,6 +264,8 @@ module.exports = {
     updateOrderPaymentIntentId,
     markAsDelivered,
     getOrdersByBuyer,
+    findAbandonedPendingOrders,
+    deleteOrderById,
     findOrdersReadyForPayout,
     updateOrderAsPaidOut,
     disputeOrder,

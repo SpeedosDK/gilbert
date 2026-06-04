@@ -91,7 +91,7 @@ async function initiateOrder(
         throw err;
     }
 
-    // ⭐ Determine if this is a large item (manual pickup)
+    // Determine if this is a large item (manual pickup)
     const isLargeItem =
         product.isLargeItem === true ||
         NO_SHIPPING_SUBCATEGORIES?.includes(product.subcategory.toString());
@@ -240,6 +240,86 @@ async function getOrderById(orderId, userId) {
     }
 
     return order;
+}
+
+
+//  Returnerer true hvis Stripe-betalingen reelt er gennemført/autoriseret,
+// så vi ALDRIG sletter en ordre der faktisk er betalt.
+async function isPaymentSettled(paymentIntentId) {
+    if (!paymentIntentId) return false;
+    try {
+        const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+        // Manuel capture: 'requires_capture' = autoriseret. 'succeeded'/'processing' = betalt.
+        return ['succeeded', 'processing', 'requires_capture'].includes(pi.status);
+    } catch (err) {
+        console.error(`Kunne ikke hente PaymentIntent ${paymentIntentId}:`, err.message);
+        // Ved tvivl: behandl som betalt, så vi ikke sletter en ægte ordre.
+        return true;
+    }
+}
+
+// Annullér en ubetalt ordre (kaldes når køber forlader/annullerer betaling).
+async function cancelPendingOrder(orderId, userId) {
+    const order = await orderRepo.findOrderById(orderId);
+    if (!order) throw new Error("Order not found.");
+
+    if (order.buyer._id.toString() !== userId.toString()) {
+        const err = new Error("You are not allowed to cancel this order.");
+        err.status = 403;
+        throw err;
+    }
+
+    // Kun ubetalte ordrer må annulleres/slettes.
+    if (order.status !== 'pending') {
+        const err = new Error("Only unpaid orders can be cancelled.");
+        err.status = 400;
+        throw err;
+    }
+
+    // Sikkerhed: hvis betalingen alligevel er gået igennem, slet IKKE.
+    if (await isPaymentSettled(order.stripePaymentIntentId)) {
+        const err = new Error("This order has already been paid and cannot be cancelled here.");
+        err.status = 400;
+        throw err;
+    }
+
+    // Annullér PaymentIntent hos Stripe (best effort).
+    if (order.stripePaymentIntentId) {
+        try {
+            await stripe.paymentIntents.cancel(order.stripePaymentIntentId);
+        } catch (err) {
+            console.warn(`⚠️ Kunne ikke annullere PaymentIntent ${order.stripePaymentIntentId}:`, err.message);
+        }
+    }
+
+    await orderRepo.deleteOrderById(orderId);
+    return { cancelled: true };
+}
+
+// ⭐ Cron: ryd op i forladte, ubetalte ordrer (annulleret/lukket checkout).
+async function cleanupAbandonedOrders(maxAgeMinutes = 30) {
+    const cutoff = new Date(Date.now() - maxAgeMinutes * 60 * 1000);
+    const abandoned = await orderRepo.findAbandonedPendingOrders(cutoff);
+
+    let deleted = 0;
+    for (const order of abandoned) {
+        // Spring over hvis betalingen reelt er gennemført/autoriseret.
+        if (await isPaymentSettled(order.stripePaymentIntentId)) continue;
+
+        if (order.stripePaymentIntentId) {
+            try {
+                await stripe.paymentIntents.cancel(order.stripePaymentIntentId);
+            } catch (err) {
+                console.warn(`⚠️ Cron: kunne ikke annullere PI ${order.stripePaymentIntentId}:`, err.message);
+            }
+        }
+
+        await orderRepo.deleteOrderById(order._id);
+        deleted++;
+    }
+
+    if (deleted > 0) console.log(`🗑️ Cron: slettede ${deleted} forladte ubetalte ordrer.`);
+    return deleted;
 }
 
 
@@ -740,5 +820,7 @@ module.exports = {
     getUserSales,
     handleShipmondoWebhook,
     confirmPickup,
-    approveDelivery
+    approveDelivery,
+    cancelPendingOrder,
+    cleanupAbandonedOrders
 };

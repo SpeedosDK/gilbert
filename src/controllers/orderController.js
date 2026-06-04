@@ -220,6 +220,24 @@ async function confirmPickup(req, res, next) {
     }
 }
 
+// Annullér en ubetalt ordre (køber forlod/annullerede betaling)
+async function cancelOrder(req, res, next) {
+    try {
+        const { id } = req.params;
+        const userId = req.user._id;
+
+        const result = await orderService.cancelPendingOrder(id, userId);
+
+        return res.status(200).json({
+            success: true,
+            message: "Order cancelled.",
+            ...result
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
 async function downloadLabel(req, res, next) {
     try {
         const orderId = req.params.id;
@@ -266,4 +284,5 @@ module.exports = {
     handleShipmondoWebhook,
     approveDelivery,
     confirmPickup,
+    cancelOrder,
 };

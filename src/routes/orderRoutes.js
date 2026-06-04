@@ -17,5 +17,6 @@ router.get('/:id', requireAuth, orderController.getOrderById);
 router.post('/:id/approve-delivery', requireAuth, orderController.approveDelivery);
 router.post('/:orderId/confirm-pickup', requireAuth, orderController.confirmPickup);
 router.post('/:id/dispute', requireAuth, orderController.openOrderDispute);
+router.post('/:id/cancel', requireAuth, orderController.cancelOrder);
 
 module.exports = router;
