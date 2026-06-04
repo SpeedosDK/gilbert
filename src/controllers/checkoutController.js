@@ -12,7 +12,7 @@ require('dotenv').config();
 
 async function calculateCheckout(req, res, next) {
     try {
-        const { productId, discountCode, shippingMethod, address } = req.body;
+        const { productId, discountCode, shippingMethod, address, wantsAuthentication } = req.body;
         const userId = req.user.id;
 
         const product = await productRepo.getProductById(productId);
@@ -58,7 +58,8 @@ async function calculateCheckout(req, res, next) {
             }
 
             const isAuthForced = basePrice >= AUTH_THRESHOLD;
-            const authenticationFee = isAuthForced ? AUTHENTICATION_FEE : 0;
+            const requiresAuthentication = isAuthForced || wantsAuthentication === true;
+            const authenticationFee = requiresAuthentication ? AUTHENTICATION_FEE : 0;
 
             const total = basePrice - discountAmount + authenticationFee;
 
@@ -106,7 +107,8 @@ async function calculateCheckout(req, res, next) {
 
         // ⭐ Authentication fee
         const isAuthForced = basePrice >= AUTH_THRESHOLD;
-        const authenticationFee = isAuthForced ? AUTHENTICATION_FEE : 0;
+        const requiresAuthentication = isAuthForced || wantsAuthentication === true;
+        const authenticationFee = requiresAuthentication ? AUTHENTICATION_FEE : 0;
 
         // ⭐ Total
         const total = basePrice - discountAmount + shippingPrice + authenticationFee;

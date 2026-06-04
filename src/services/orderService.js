@@ -250,11 +250,14 @@ async function isPaymentSettled(paymentIntentId) {
     try {
         const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
         // Manuel capture: 'requires_capture' = autoriseret. 'succeeded'/'processing' = betalt.
-        return ['succeeded', 'processing', 'requires_capture'].includes(pi.status);
+        const settled = ['succeeded', 'processing', 'requires_capture'].includes(pi.status);
+        console.log(`PI ${paymentIntentId} status=${pi.status} → settled=${settled}`);
+        return settled;
     } catch (err) {
-        console.error(`Kunne ikke hente PaymentIntent ${paymentIntentId}:`, err.message);
-        // Ved tvivl: behandl som betalt, så vi ikke sletter en ægte ordre.
-        return true;
+        // Kan vi IKKE hente PI'en, er betalingen ikke gennemført (fx slettet/ugyldig).
+        // Returnér false, så en forladt/ubetalt ordre stadig kan ryddes op.
+        console.error(`Kunne ikke hente PaymentIntent ${paymentIntentId}: ${err.message} → behandler som IKKE betalt`);
+        return false;
     }
 }
 
@@ -293,13 +296,15 @@ async function cancelPendingOrder(orderId, userId) {
     }
 
     await orderRepo.deleteOrderById(orderId);
+    console.log(`🗑️ Ordre ${orderId} annulleret og slettet (ubetalt).`);
     return { cancelled: true };
 }
 
-// ⭐ Cron: ryd op i forladte, ubetalte ordrer (annulleret/lukket checkout).
+// Cron: ryd op i forladte, ubetalte ordrer (annulleret/lukket checkout).
 async function cleanupAbandonedOrders(maxAgeMinutes = 30) {
     const cutoff = new Date(Date.now() - maxAgeMinutes * 60 * 1000);
     const abandoned = await orderRepo.findAbandonedPendingOrders(cutoff);
+    console.log(`🤖 Cron: fandt ${abandoned.length} ubetalte ordre(r) ældre end ${maxAgeMinutes} min.`);
 
     let deleted = 0;
     for (const order of abandoned) {
