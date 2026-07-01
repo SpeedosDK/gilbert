@@ -92,7 +92,7 @@ async function getProductById(productId, userId) {
 
     const isFav = await favoriteRepo.isFavorite(userId, productId);
     return {
-        ...product.toObject(),
+        ...product,
         isFavorite: !!isFav
     };
 }
