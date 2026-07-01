@@ -11,6 +11,7 @@ const notificationService = require('../services/notificationService');
 const notificationTypes = require('../utils/notificationTypes');
 const chatService = require('../services/chatService');
 const discountCodeService = require('../services/discountCodeService');
+const { parseBoolean } = require('../utils/parseBoolean');
 require('dotenv').config();
 
 
@@ -151,7 +152,7 @@ async function initiateOrder(
 
     // Authentication fee
     const isAuthForced = finalPrice >= AUTH_THRESHOLD;
-    const requiresAuthentication = isAuthForced || wantsAuthentication;
+    const requiresAuthentication = isAuthForced || parseBoolean(wantsAuthentication);
     const currentAuthFee = requiresAuthentication ? AUTHENTICATION_FEE : 0;
 
     // Platform fee + seller payout

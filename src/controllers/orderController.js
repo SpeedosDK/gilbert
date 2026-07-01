@@ -1,11 +1,13 @@
 const orderService = require('../services/orderService');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { sanitizeUser } = require("../utils/sanitizeUser");
+const { parseBoolean } = require("../utils/parseBoolean");
 
 // 1. Opret en ny ordre (Køb nu / Accepter bud)
 async function initiateOrder(req, res, next) {
     try {
-        const { productId, bidId, wantsAuthentication, address, discountCode, shippingMethod } = req.body;
+        const { productId, bidId, address, discountCode, shippingMethod } = req.body;
+        const wantsAuthentication = parseBoolean(req.body.wantsAuthentication);
         const buyerId = req.user._id;
 
         const result = await orderService.initiateOrder(
