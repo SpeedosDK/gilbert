@@ -85,7 +85,19 @@ async function findProducts(filters, page, limit, userId) {
 }
 
 async function getProductById(productId, userId) {
-    const product = await productRepo.getProductById(productId);
+    let product = await productRepo.getProductById(productId);
+
+    // Tillad sælgeren at se sit eget produkt uanset status
+    if (!product && userId) {
+        const anyProduct = await productRepo.getProductByIdAny(productId);
+        if (anyProduct) {
+            const sellerId = anyProduct.seller?._id ?? anyProduct.seller;
+            if (String(sellerId) === String(userId)) {
+                product = anyProduct;
+            }
+        }
+    }
+
     if (!product) return null;
 
     if (!userId) return product;
