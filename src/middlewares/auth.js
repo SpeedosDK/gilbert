@@ -36,6 +36,30 @@ async function requireAuth(req, res, next) {
     }
 }
 
+async function optionalAuth(req, res, next) {
+    try {
+        const token = req.cookies.authToken;
+        if (!token) return next();
+
+        let decoded;
+        try {
+            decoded = jwt.verify(token, process.env.JWT_SECRET);
+        } catch {
+            return next();
+        }
+
+        const user = await userRepo.findUserById(decoded.id);
+        if (user && !user.deleted && user.active !== false && user.role !== "deleted") {
+            req.user = user;
+        }
+        next();
+    } catch (error) {
+        console.error("Optional auth middleware error: " + error);
+        next();
+    }
+}
+
 module.exports = {
     requireAuth,
+    optionalAuth,
 };
