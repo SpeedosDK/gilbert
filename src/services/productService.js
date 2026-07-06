@@ -135,7 +135,7 @@ async function updateProduct(productId, productData) {
 }
 
 async function deleteProduct(productId) {
-    const product = await productRepo.getProductById(productId);
+    const product = await productRepo.getProductByIdAny(productId);
     if (!product) return null;
 
     if (product.images && product.images.length > 0) {
